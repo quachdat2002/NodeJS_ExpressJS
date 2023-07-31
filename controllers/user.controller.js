@@ -1,48 +1,87 @@
 const User = require('../models/user.model');
 const people = require('../assets/people.json');
 const fs = require('fs');
+const db = require('../database.js');
+//khai báo thư viện mã hóa
+const bcrypt = require('bcrypt');
+//thời gian mã hóa =10
+const saltRounds = 10;
 
 
 class UserController {
     get(req, res) {
-        const filter = req.query.filter;
-        
-        // console.log(filter);
-
-        // fs.writeFile('mynewfile3.txt', 'Xin chào, đã nhận được yêu cầu của bạn', function (err) {
-        //     if (err) 
-        //         throw err;
-        //     console.log('Saved!');
-        // });
-
-        // fs.appendFile('mynewfile3.txt', '\nthêm vào dòng tiếp theo', function (err) {
-        //     if (err) 
-        //         throw err;
-        //     console.log('Saved!');
-        // });
-
-
-        try {
-            const data = fs.readFileSync('mynewfile3.txt', 'utf8');
-            return res.status(200).json({data});
-        } catch (e) {
-            return res.status(200).json({error: 'không thể đọc file'});
-        }
-
-        // const filterPeople = people.filter((person) => person.first_name.includes('a'));
-        // return res.status(200).json({data: filterPeople, length: filterPeople.length});
+        db.connectDB().then((connection) => {
+            connection.query(
+                `SELECT * FROM users`,
+                function (err,data,fields) {
+                    console.log('data',data);
+                    db.closeDB(connection);
+                    return res.status(200).json({data});
+                }
+            );
+        })
+        .catch((err) => {
+            console.log('Db note connected successfully',err);
+            return res.status(200).json({result: 'Không thể kết nối database'});
+        });
     }
 
     post(req, res) {
-        const filter = req.body.filter;
-        // console.log('filter',filter);
+        const username = req.body.username;
+        const password = req.body.password;
         
-        fs.appendFile('chao.txt', `Chào bạn + ${filter} \n`, function (err) {
-            if (err) throw err;
-            console.log('Saved!');
-          });
+        let encryptedPassword = '';
+        //kỹ thuật mã hóa password
+        //saltRounds là thời gian mã hóa
+        bcrypt.hash(password, saltRounds, function(err, hash) {
+            //gán biến hash cho password đã mã hóa
+            encryptedPassword = hash;
+            console.log('encPass:', encryptedPassword);
+                //hàm kết nối mysql
+                db.connectDB().then((connection) => {
+                    console.log('connected successfully!');
+                    connection.query(
+                        //lưu password đã mã hóa vào  mysql
+                        `INSERT INTO users(username,password,email) VALUES ('${username}','${encryptedPassword}','')`,
+                        function (err,data,fields) {
+                            //in data vừa lấy đc ra màn hình terminal
+                            console.log('data',data);
+                            db.closeDB(connection);
+                            //trả về thông báo cho client khi mà lưu vào mysql thành công
+                            return res.status(200).json({result: 'Thành công'});
+                        }
+                    );
+                })
+                .catch((error) => {
+                    console.log('Db not connected successfully',error);
+                    return res.status(200).json({result: 'Không thể kết nối database'});
+                });
+        });
+    }
+    
+    login(req,res) {
+        const username = req.body.username;
+        const password = req.body.password;
 
-        return res.status(200).json({result: 'Chào bạn '+ filter});
+        db.connectDB()
+            .then((connection) => {
+                connection.query(
+                    //truy vấn username trước 
+                    `select *from users where username='${username}' limit 1`,
+                    function(err,data,fields) {
+                        //khi có dữ liệu bản ghi username rồi thì chấm tới password 
+                        console.log('data',data[0].password);
+                        db.closeDB(connection);
+                        //hàm so sánh password trong mysql với password từ client gửi lên
+                        bcrypt.compare(password, data[0].password, function(err, result) {
+                            if(result)
+                                return res.status(200).json('Login thành công');
+                            else
+                                return res.status(200).json('login thất bại');
+                        });
+                    }
+                )
+            })
     }
 }
 

@@ -10,10 +10,11 @@ app.use(express.urlencoded());
 //website
 app.use(express.static('client'));
 
-//đường dẫn từ api /users 
+//tạo đường dẫn api /users để kết nối
 app.use(apiPath + 'users', require('./routes/users.route'));
 //khi nào gọi api mà có /upload sẽ đưa quyền điều khiển cho thằng upload.route.js
 app.use(apiPath + 'upload', require('./routes/upload.route'));
+
 const server = app.listen(port, function () {
     const host = 'localhost';
     const port = server.address().port;
