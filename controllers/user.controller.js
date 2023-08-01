@@ -86,13 +86,14 @@ class UserController {
     //hàm promise để đợi module testPromise làm việc xong thì mới in ra thông báo cho client
     promise(req,res) {
         let data = 'chưa có data';
-        
+        //hàm này sẽ đợi 3s
         db.testPromise(3000).then((monan) => {
             console.log('món ăn 3000:',monan);
         }).catch((error) => {
             console.log('error',error)
         });
-
+        //sau đó sẽ tới dòng này đợi 1s
+        
         db.testPromise(1000).then((monan) => {
             console.log('món ăn 1000:',monan);
         }).catch((error) => {
@@ -100,6 +101,7 @@ class UserController {
         });
 
         // console.log('data',data);
+        //dòng này sẽ in ra đầu tiên 
         return res.status(200).json(data);
     }
 }
