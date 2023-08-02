@@ -93,7 +93,7 @@ class UserController {
             console.log('error',error)
         });
         //sau đó sẽ tới dòng này đợi 1s
-        
+
         db.testPromise(1000).then((monan) => {
             console.log('món ăn 1000:',monan);
         }).catch((error) => {
@@ -103,6 +103,28 @@ class UserController {
         // console.log('data',data);
         //dòng này sẽ in ra đầu tiên 
         return res.status(200).json(data);
+    }
+
+    //hàm promises 
+    promises(req,res) {
+        let allData= 'chưa có';
+
+        const promise1 = db.testPromise('#1',3000);
+        const promise2 = db.testPromise('#2',2000);
+
+        Promise.all([promise1,promise2]).then((result) => {
+            //result[0] is result of promise 1
+            //result[2] is result of promise 2
+
+            console.log(result);
+            return res.status(200).json(allData);
+        }, (error) => {
+            console.log(error);
+            return res.status(200).json(error);
+        });
+
+        // console.log('allData',allData);
+        // return res.status(200).json(allData);
     }
 }
 
