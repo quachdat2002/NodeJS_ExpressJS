@@ -68,14 +68,19 @@ class UserController {
                 connection.query(
                     //truy vấn username trước 
                     `select *from users where username='${username}' limit 1`,
-                    function(err,data,fields) {
+                    async function(err,data,fields) {
                         //khi có dữ liệu bản ghi username rồi thì chấm tới password 
                         console.log('data',data[0].password);
                         db.closeDB(connection);
                         //hàm so sánh password trong mysql với password từ client gửi lên
-                        bcrypt.compare(password, data[0].password, function(err, result) {
-                            if(result)
+                        const kiemtraPws = await bcrypt.compare(password, data[0].password, function(err, result) {
+                            if(kiemtraPws) {
+                                const token = generateJWT({
+                                    username: username,
+                                });
                                 return res.status(200).json('Login thành công');
+                            }
+                                
                             else
                                 return res.status(200).json('login thất bại');
                         });
@@ -85,26 +90,11 @@ class UserController {
     }
     //hàm promise để đợi module testPromise làm việc xong thì mới in ra thông báo cho client
     promise(req,res) {
-        let data = 'chưa có data';
-        //hàm này sẽ đợi 3s
-        db.testPromise(3000).then((monan) => {
-            console.log('món ăn 3000:',monan);
-        }).catch((error) => {
-            console.log('error',error)
-        });
-        //sau đó sẽ tới dòng này đợi 1s
-
-        db.testPromise(1000).then((monan) => {
-            console.log('món ăn 1000:',monan);
-        }).catch((error) => {
-            console.log('error',error)
-        });
-
         // console.log('data',data);
-        //dòng này sẽ in ra đầu tiên 
-        return res.status(200).json(data);
+        
+        const key = require('crypto').randomBytes(256).toString('hex');
+        console.log('secret key',key);
     }
-
     //hàm promises 
     promises(req,res) {
         let allData= 'chưa có';
@@ -126,6 +116,27 @@ class UserController {
         // console.log('allData',allData);
         // return res.status(200).json(allData);
     }
+    //nhận username từ client để tạo token
+    async fakeLogin(req, res) {
+        const payload = {username: 'quachdat2002', id: 1};
+        const token = generateJWT(payload);
+        return res.status(200).json(token);
+    }
+
+    
+}
+
+function generateSecretKey(req,res) {
+    // console.log('data',data);
+    
+    const key = require('crypto').randomBytes(256).toString('hex');
+    console.log('secret key',key);
+
+    return res.status(200).json(key);
+}
+//tạo Token mới cho thằng payload
+function generateJWT(payload) {
+    return JsonWebTokenError.sign(payload, process.env.TOKEN_SECRET,{ expiresIn: '120s'});
 }
 
 module.exports = new UserController();
